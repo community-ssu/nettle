@@ -97,19 +97,8 @@ ecc_256_modp (const struct ecc_curve *ecc, mp_limb_t *rp)
 
       assert (q2 < 2);
 
-      /*
-	 n-1 n-2 n-3 n-4
-        +---+---+---+---+
-        | u1| u0| u low |
-        +---+---+---+---+
-          - | q1(2^96-1)|
-            +-------+---+
-            |q2(2^.)|
-            +-------+
-
-	 We multiply by two low limbs of p, 2^96 - 1, so we could use
-	 shifts rather than mul.
-      */
+      /* We multiply by two low limbs of p, 2^96 - 1, so we could use
+	 shifts rather than mul. */
       t = mpn_submul_1 (rp + n - 4, ecc->p, 2, q1);
       t += cnd_sub_n (q2, rp + n - 3, ecc->p, 1);
       t += (-q2) & 0xffffffff;
@@ -119,10 +108,7 @@ ecc_256_modp (const struct ecc_curve *ecc, mp_limb_t *rp)
       u0 -= t;
       t = (u1 < cy);
       u1 -= cy;
-
-      cy = cnd_add_n (t, rp + n - 4, ecc->p, 2);
-      u0 += cy;
-      u1 += (u0 < cy);
+      u1 += cnd_add_n (t, rp + n - 4, ecc->p, 3);
       u1 -= (-t) & 0xffffffff;
     }
   rp[2] = u0;
@@ -209,7 +195,7 @@ ecc_256_modq (const struct ecc_curve *ecc, mp_limb_t *rp)
 
       /* Conditional add of p */
       u1 += t;
-      u2 += (t<<32) + (u1 < t);
+      u2 += (t<<32) + (u0 < t);
 
       t = cnd_add_n (t, rp + n - 4, ecc->q, 2);
       u1 += t;
